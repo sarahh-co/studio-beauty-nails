@@ -20,3 +20,65 @@ body {
   background: var(--color-creme);
   color: var(--color-sauge-fonce);
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes heroBackRise {
+    to {
+      transform: translateY(-6%);
+    }
+  }
+
+  @keyframes heroFrontRise {
+    to {
+      transform: translateY(-12%);
+    }
+  }
+
+  @keyframes heroGreenIn {
+    to {
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes heroTextSink {
+    to {
+      transform: translateY(48px);
+    }
+  }
+
+  .hero-hand-back {
+    animation-name: heroBackRise;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+    animation-range: 0% 60%;
+  }
+
+  .hero-hand-front {
+    animation-name: heroFrontRise;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+    animation-range: 0% 60%;
+  }
+
+  .hero-green {
+    animation-name: heroGreenIn;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+    animation-range: 0% 60%;
+  }
+
+  .hero-text {
+    animation-name: heroTextSink;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+    animation-range: 0% 60%;
+  }
+}
