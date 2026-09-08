@@ -26,7 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" className={`${dmSerif.variable} ${geist.variable}`}>
-      <body>
+      <body className="overflow-x-hidden">
         <Header />
         {children}
       </body>

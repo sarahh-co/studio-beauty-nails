@@ -87,18 +87,21 @@ export default function Header() {
 
       <div
         id="mobile-menu"
-        className={`fixed inset-0 z-40 bg-creme pt-[92px] transition-opacity duration-200 ${
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
+        aria-hidden={!open}
+        className={`menu-panel fixed inset-0 z-40 bg-creme pt-[92px] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          open
+            ? "translate-x-0"
+            : "translate-x-full pointer-events-none invisible"
         }`}
       >
         <Container>
-          <nav className="flex flex-col gap-8 py-12">
+          <nav className="flex flex-col items-start gap-8 py-12">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="font-serif text-[28px] text-sauge-fonce"
+                className="menu-link relative inline-block w-fit font-serif text-[28px] text-sauge-fonce after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:origin-right after:scale-x-0 after:bg-sauge-fonce after:transition-transform after:duration-300 after:ease-out hover:after:origin-left hover:after:scale-x-100"
               >
                 {link.label}
               </Link>
