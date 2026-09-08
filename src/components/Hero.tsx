@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Hero() {
   return (
-    <section className="bg-creme px-4 py-4 md:px-8">
+    <section className="relative isolate bg-creme px-4 py-4 md:px-8">
       <div className="relative mx-auto aspect-[3/4] w-full max-w-[600px] overflow-hidden rounded-2xl">
         <Image
           src="/hero-bg.webp"
@@ -46,6 +46,20 @@ export default function Hero() {
             className="object-cover"
           />
         </div>
+
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 z-[70] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(38, 42, 36, 0.38) 100%)",
+          }}
+        />
+
+        <div
+          aria-hidden="true"
+          className="hero-grain absolute inset-0 z-[71] pointer-events-none"
+        />
       </div>
     </section>
   );

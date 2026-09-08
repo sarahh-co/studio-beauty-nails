@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <>
       <Hero />
-      <section className="h-screen bg-creme" />
+      <section id="prestations" className="h-screen bg-creme" />
     </>
   );
 }
