@@ -1,5 +1,6 @@
 import Hero from "@/components/Hero";
 import Salon from "@/components/Salon";
+import Tarifs from "@/components/Tarifs";
 
 export default function Home() {
   return (
@@ -8,7 +9,7 @@ export default function Home() {
         <Hero />
       </div>
       <Salon />
-      <section id="prestations" className="h-screen bg-creme" />
+      <Tarifs />
     </>
   );
 }

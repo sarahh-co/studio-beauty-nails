@@ -24,7 +24,7 @@ export default function Hero() {
 
   return (
     <section
-      className={`relative isolate w-full bg-creme p-2 ${
+      className={`relative isolate w-full bg-creme p-2 pt-6 md:pt-2 ${
         revealed ? "hero-revealed" : ""
       }`}
     >
