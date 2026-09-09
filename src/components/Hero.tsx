@@ -24,15 +24,16 @@ export default function Hero() {
 
   return (
     <section
-      className={`relative isolate bg-creme px-4 py-4 md:px-8 ${
+      className={`relative isolate w-full bg-creme p-2 ${
         revealed ? "hero-revealed" : ""
       }`}
     >
-      <div className="relative mx-auto aspect-[3/4] w-full max-w-[600px] overflow-hidden rounded-2xl">
+      <div className="relative w-full overflow-hidden rounded-2xl aspect-[3/4] md:aspect-[2752/1536]">
         <Image
           src="/hero-bg.webp"
           fill
           preload={true}
+          sizes="(max-width: 768px) 240vw, 100vw"
           alt=""
           className="object-cover"
         />
@@ -48,6 +49,7 @@ export default function Hero() {
             src="/hero-hand-back.webp"
             fill
             preload={true}
+            sizes="(max-width: 768px) 240vw, 100vw"
             alt=""
             className="object-cover"
           />
@@ -84,6 +86,7 @@ export default function Hero() {
             src="/hero-hand-front.webp"
             fill
             preload={true}
+            sizes="(max-width: 768px) 240vw, 100vw"
             alt=""
             className="object-cover"
           />
