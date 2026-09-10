@@ -30,6 +30,10 @@ body {
     transition: none;
   }
 
+  .insta-link span::after {
+    transition: none;
+  }
+
   .hero-sub,
   .hero-cta {
     transition: none;
@@ -39,6 +43,23 @@ body {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
+
+  .marquee-row {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .marquee-track [aria-hidden="true"] {
+    display: none;
+  }
+
+  .marquee-card {
+    scroll-snap-align: start;
   }
 }
 
@@ -75,6 +96,65 @@ body {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+.marquee-row {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+}
+
+.marquee-track {
+  will-change: transform;
+  animation-name: marqueeScroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: var(--marquee-duration);
+}
+
+.marquee-track-reverse {
+  animation-direction: reverse;
+}
+
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .marquee-track {
+    animation-duration: var(--marquee-duration-desktop);
+  }
+
+  .marquee-card {
+    height: clamp(20rem, 28vw, 30rem);
+    margin-right: 1rem;
+  }
+
+  .marquee-rows {
+    gap: 1rem;
+  }
 }
 
 .hero-grain {

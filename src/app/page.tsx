@@ -1,6 +1,7 @@
 import Hero from "@/components/Hero";
 import Salon from "@/components/Salon";
 import Tarifs from "@/components/Tarifs";
+import Galerie from "@/components/Galerie";
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
       </div>
       <Salon />
       <Tarifs />
+      <Galerie />
     </>
   );
 }
