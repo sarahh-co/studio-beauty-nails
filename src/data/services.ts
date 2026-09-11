@@ -8,6 +8,10 @@ export type Service = {
   categorie: Categorie;
   standalone: boolean; // can be booked on its own
   couplable: boolean; // can be added to another service
+  durationMinutes: number;
+  allowsDeco: boolean;
+  allowsTailleXL: boolean;
+  allowsDepose: boolean;
 };
 
 export type Supplement = {
@@ -28,6 +32,10 @@ export const services: Service[] = [
     categorie: "mains",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: false,
+    allowsTailleXL: false,
+    allowsDepose: true,
   },
   {
     id: "mains-semi",
@@ -37,6 +45,10 @@ export const services: Service[] = [
     categorie: "mains",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: false,
+    allowsDepose: true,
   },
   {
     id: "mains-gainage",
@@ -46,6 +58,10 @@ export const services: Service[] = [
     categorie: "mains",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: false,
+    allowsDepose: true,
   },
   {
     id: "mains-capsule",
@@ -55,6 +71,10 @@ export const services: Service[] = [
     categorie: "mains",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: true,
+    allowsDepose: true,
   },
   // remplissage is deliberately 45 for mains and 40 for pieds — confirmed, not a typo
   {
@@ -65,6 +85,10 @@ export const services: Service[] = [
     categorie: "mains",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: true,
+    allowsDepose: false,
   },
   {
     id: "depose-mains",
@@ -74,6 +98,10 @@ export const services: Service[] = [
     categorie: "mains",
     standalone: true,
     couplable: true,
+    durationMinutes: 30,
+    allowsDeco: false,
+    allowsTailleXL: false,
+    allowsDepose: false,
   },
 
   // PIEDS
@@ -85,6 +113,10 @@ export const services: Service[] = [
     categorie: "pieds",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: false,
+    allowsTailleXL: false,
+    allowsDepose: true,
   },
   {
     id: "pieds-semi",
@@ -94,6 +126,10 @@ export const services: Service[] = [
     categorie: "pieds",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: false,
+    allowsDepose: true,
   },
   {
     id: "pieds-gainage",
@@ -103,6 +139,10 @@ export const services: Service[] = [
     categorie: "pieds",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: false,
+    allowsDepose: true,
   },
   {
     id: "pieds-rallongement",
@@ -112,6 +152,10 @@ export const services: Service[] = [
     categorie: "pieds",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: true,
+    allowsDepose: true,
   },
   // remplissage is deliberately 45 for mains and 40 for pieds — confirmed, not a typo
   {
@@ -122,6 +166,10 @@ export const services: Service[] = [
     categorie: "pieds",
     standalone: true,
     couplable: false,
+    durationMinutes: 60,
+    allowsDeco: true,
+    allowsTailleXL: true,
+    allowsDepose: false,
   },
   {
     id: "depose-pieds",
@@ -131,6 +179,10 @@ export const services: Service[] = [
     categorie: "pieds",
     standalone: true,
     couplable: true,
+    durationMinutes: 30,
+    allowsDeco: false,
+    allowsTailleXL: false,
+    allowsDepose: false,
   },
 ];
 
@@ -176,7 +228,24 @@ export const supplements: Supplement[] = [
     unite: "forfait",
     forceSurDemande: true,
   },
+  {
+    id: "hors-horaires",
+    nom: "Hors horaires",
+    prix: 5,
+    unite: "forfait",
+    forceSurDemande: false,
+  },
 ];
+
+// ESTIMATIONS — à remplacer par des mesures réelles
+export const addOnDurations = {
+  deposeAjoutee: 30,
+  decoTier1: 15,
+  decoTier2: 30,
+  fleur3dChacune: 5,
+  tailleXL: 10,
+  nailArt: 30,
+};
 
 export const servicesParCategorie = (c: Categorie) =>
   services.filter((s) => s.categorie === c);
