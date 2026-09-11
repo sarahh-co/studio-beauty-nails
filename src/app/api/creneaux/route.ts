@@ -1,34 +1,76 @@
-// Temporary test route — will accept a Selection instead of a slug in the next step.
-
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getQuote, type Selection } from "@/lib/quote";
+import { snapToLadder, slugFor } from "@/lib/calcom";
 import { getSlots } from "@/lib/server/calApi";
 
-const SLUG_PATTERN = /^(rdv|demande)-\d+$/;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 14;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-function isValidDate(value: string): boolean {
+const zoneChoiceSchema = z.object({
+  serviceId: z.string(),
+  depose: z.boolean(),
+  frenchCount: z.number(),
+  frenchStyle: z.enum(["french", "babyboomer", "chrome"]),
+  strassCount: z.number(),
+  fleur3dCount: z.number(),
+  tailleXL: z.boolean(),
+  nailArt: z.boolean(),
+  beaute: z.boolean(),
+});
+
+const selectionSchema = z.object({
+  mains: zoneChoiceSchema.nullable(),
+  pieds: zoneChoiceSchema.nullable(),
+  horsHoraires: z.boolean(),
+});
+
+const bodySchema = z.object({
+  selection: selectionSchema,
+  from: z.string().regex(DATE_PATTERN),
+  to: z.string().regex(DATE_PATTERN),
+});
+
+function isValidCalendarDate(value: string): boolean {
   if (!DATE_PATTERN.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime());
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const slug = searchParams.get("slug");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+function todayInParis(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
 
-  if (!slug || !SLUG_PATTERN.test(slug)) {
+export async function POST(request: NextRequest) {
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
+
+  const parsed = bodySchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
+
+  const { selection, from, to } = parsed.data;
+
+  if (!isValidCalendarDate(from) || !isValidCalendarDate(to)) {
     return NextResponse.json(
-      { error: "Paramètre slug invalide" },
+      { error: "Dates invalides (format YYYY-MM-DD attendu)" },
       { status: 400 }
     );
   }
 
-  if (!from || !to || !isValidDate(from) || !isValidDate(to)) {
+  if (from < todayInParis()) {
     return NextResponse.json(
-      { error: "Paramètres from/to invalides (format YYYY-MM-DD attendu)" },
+      { error: "La date de début doit être aujourd'hui ou plus tard" },
       { status: 400 }
     );
   }
@@ -45,10 +87,33 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  let quote;
+  try {
+    quote = getQuote(selection as Selection);
+  } catch {
+    return NextResponse.json({ error: "Sélection invalide" }, { status: 400 });
+  }
+
+  if (!quote) {
+    return NextResponse.json({ error: "Sélection invalide" }, { status: 400 });
+  }
+
+  const snapped = snapToLadder(quote.durationMinutes);
+  if (snapped === null) {
+    return NextResponse.json(
+      { error: "Durée trop longue pour la réservation en ligne" },
+      { status: 422 }
+    );
+  }
+
+  const slug = slugFor(quote.route, snapped);
+
   try {
     const slots = await getSlots(slug, from, to);
-    return NextResponse.json(slots);
-  } catch {
+    return NextResponse.json({ slots });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "erreur inconnue";
+    console.error(`Cal.com error for slug ${slug}: ${message}`);
     return NextResponse.json(
       { error: "Impossible de récupérer les créneaux pour le moment" },
       { status: 502 }

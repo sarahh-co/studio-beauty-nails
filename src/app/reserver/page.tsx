@@ -13,9 +13,6 @@ export default function ReserverPage() {
         <h1 className="font-serif text-3xl leading-tight text-sauge-fonce md:text-5xl">
           Réserver
         </h1>
-        <p className="mt-3 font-sans text-sm text-sauge-fonce">
-          Choisissez vos prestations, le prix s’affiche en direct.
-        </p>
       </Section>
 
       <Configurateur />

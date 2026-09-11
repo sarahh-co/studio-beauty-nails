@@ -7,6 +7,8 @@ type ButtonProps = {
   className?: string;
   disabled?: boolean;
   onClick?: () => void;
+  target?: string;
+  rel?: string;
 };
 
 const sharedClasses =
@@ -24,6 +26,8 @@ export default function Button({
   className,
   disabled,
   onClick,
+  target,
+  rel,
 }: ButtonProps) {
   const classes = `${sharedClasses} ${variantClasses[variant]} ${
     disabled ? "opacity-50 pointer-events-none" : ""
@@ -31,7 +35,7 @@ export default function Button({
 
   if (href && !disabled) {
     return (
-      <Link href={href} className={classes} onClick={onClick}>
+      <Link href={href} className={classes} onClick={onClick} target={target} rel={rel}>
         {children}
       </Link>
     );

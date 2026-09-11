@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import Stepper from "@/components/reserver/Stepper";
+import SlotPicker, {
+  formatDayLabel,
+  formatTimeLabel,
+} from "@/components/reserver/SlotPicker";
 import {
   getQuote,
   type Selection,
@@ -37,6 +41,22 @@ const initialSelection: Selection = {
   mains: null,
   pieds: null,
   horsHoraires: false,
+};
+
+type Step = "prestations" | "creneau" | "coordonnees";
+
+const STEP_ORDER: Step[] = ["prestations", "creneau", "coordonnees"];
+
+const STEP_LABELS: Record<Step, string> = {
+  prestations: "Prestations",
+  creneau: "Créneau",
+  coordonnees: "Coordonnées",
+};
+
+const STEP_SUBTITLES: Record<Step, string> = {
+  prestations: "Choisissez vos prestations, le prix s’affiche en direct.",
+  creneau: "Choisissez le jour et l’heure.",
+  coordonnees: "Vos coordonnées pour confirmer.",
 };
 
 function createFreshZone(serviceId: string): ZoneChoice {
@@ -275,6 +295,8 @@ function OptionsPanel({ zoneKey, service, zone, onUpdate }: OptionsPanelProps) {
 
 export default function Configurateur() {
   const [selection, setSelection] = useState<Selection>(initialSelection);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>("prestations");
 
   let quote = null as ReturnType<typeof getQuote>;
   let error: string | null = null;
@@ -282,6 +304,47 @@ export default function Configurateur() {
     quote = getQuote(selection);
   } catch (e) {
     error = e instanceof Error ? e.message : "Une erreur est survenue.";
+  }
+
+  // Any change to the selection invalidates a previously chosen slot.
+  useEffect(() => {
+    setSelectedSlot(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection]);
+
+  // Tag the current history entry so the browser back button can return to
+  // step 1 instead of leaving the page, then track further step changes.
+  useEffect(() => {
+    window.history.replaceState({ step: "prestations" }, "");
+
+    function handlePopState(event: PopStateEvent) {
+      const nextStep = (event.state?.step as Step | undefined) ?? "prestations";
+      setStep(nextStep);
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Scroll to the top after the new step has rendered.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [step]);
+
+  function goToStep(next: Step) {
+    window.history.pushState({ step: next }, "");
+    setStep(next);
+  }
+
+  function goBackOneStep() {
+    window.history.back();
+  }
+
+  function goToPrestations() {
+    const currentIndex = STEP_ORDER.indexOf(step);
+    if (currentIndex > 0) {
+      window.history.go(-currentIndex);
+    }
   }
 
   function handleServiceChange(zoneKey: Categorie, serviceId: string) {
@@ -310,90 +373,146 @@ export default function Configurateur() {
       maximumFractionDigits: 0,
     }).format(quote.total);
 
+  const recapLine = quote
+    ? quote.lines.map((line) => line.label).join(" · ")
+    : "";
+  const stepIndex = STEP_ORDER.indexOf(step);
+
   return (
     <div className="bg-creme">
       <Container className="pb-32">
         <div className="flex flex-col gap-10">
-          {(["mains", "pieds"] as const).map((zoneKey) => {
-            const zone = selection[zoneKey];
-            const groupName = `service-${zoneKey}`;
-            return (
-              <fieldset key={zoneKey}>
-                <legend className="mb-4 font-serif text-xl text-sauge-fonce">
-                  {ZONE_LABELS[zoneKey]}
-                </legend>
-                <div className="flex flex-col gap-3">
-                  <ServiceRadioCard
-                    name={groupName}
-                    value={NONE_VALUE}
-                    label="Aucune prestation"
-                    price={null}
-                    checked={zone === null}
-                    onChange={() => handleServiceChange(zoneKey, NONE_VALUE)}
-                  />
-                  {servicesParCategorie(zoneKey).map((service) => (
-                    <div key={service.id} className="flex flex-col gap-3">
-                      <ServiceRadioCard
-                        name={groupName}
-                        value={service.id}
-                        label={getServiceLabel(service)}
-                        price={service.prix}
-                        checked={zone?.serviceId === service.id}
-                        onChange={() =>
-                          handleServiceChange(zoneKey, service.id)
-                        }
-                      />
-                      {zone?.serviceId === service.id && (
-                        <OptionsPanel
-                          zoneKey={zoneKey}
-                          service={service}
-                          zone={zone}
-                          onUpdate={(updates) => updateZone(zoneKey, updates)}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </fieldset>
-            );
-          })}
+          <div>
+            {step !== "prestations" && (
+              <button
+                type="button"
+                onClick={goBackOneStep}
+                className="mb-2 flex min-h-11 items-center text-sauge-fonce focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-fonce"
+              >
+                ← Retour
+              </button>
+            )}
+            <p className="font-sans text-sm text-sauge-fonce">
+              Étape {stepIndex + 1} sur 3 · {STEP_LABELS[step]}
+            </p>
+            <p className="mt-3 font-sans text-sm text-sauge-fonce">
+              {STEP_SUBTITLES[step]}
+            </p>
+          </div>
 
-          {hasAnyPrestation && (
-            <fieldset>
-              <legend className="mb-4 font-serif text-xl text-sauge-fonce">
-                Horaires
-              </legend>
-              <CheckboxRow
-                label="Je souhaite un créneau en dehors des horaires"
-                price={horsHorairesPrice}
-                checked={selection.horsHoraires}
-                onChange={(checked) =>
-                  setSelection((prev) => ({ ...prev, horsHoraires: checked }))
-                }
-              />
-              <p className="mt-2 text-sm text-sauge">{openingHoursNote}</p>
-            </fieldset>
+          {step !== "prestations" && quote && (
+            <div className="flex items-start justify-between gap-4">
+              <p className="line-clamp-2 text-sm text-sauge-fonce">
+                {recapLine}
+              </p>
+              <button
+                type="button"
+                onClick={goToPrestations}
+                className="min-h-11 shrink-0 text-sm text-sauge-fonce underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-fonce"
+              >
+                Modifier
+              </button>
+            </div>
           )}
 
-          {quote && (
-            <div>
-              <h2 className="mb-4 font-serif text-xl text-sauge-fonce">
-                Récapitulatif
-              </h2>
-              <div className="flex flex-col">
-                {quote.lines.map((line, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between gap-4 border-b border-sauge-clair/40 py-3"
-                  >
-                    <span className="text-sauge-fonce">{line.label}</span>
-                    <span className="text-sauge-fonce">
-                      {line.price === null ? "sur devis" : `${line.price} €`}
-                    </span>
+          {step === "prestations" && (
+            <>
+              {(["mains", "pieds"] as const).map((zoneKey) => {
+                const zone = selection[zoneKey];
+                const groupName = `service-${zoneKey}`;
+                return (
+                  <fieldset key={zoneKey}>
+                    <legend className="mb-4 font-serif text-xl text-sauge-fonce">
+                      {ZONE_LABELS[zoneKey]}
+                    </legend>
+                    <div className="flex flex-col gap-3">
+                      <ServiceRadioCard
+                        name={groupName}
+                        value={NONE_VALUE}
+                        label="Aucune prestation"
+                        price={null}
+                        checked={zone === null}
+                        onChange={() => handleServiceChange(zoneKey, NONE_VALUE)}
+                      />
+                      {servicesParCategorie(zoneKey).map((service) => (
+                        <div key={service.id} className="flex flex-col gap-3">
+                          <ServiceRadioCard
+                            name={groupName}
+                            value={service.id}
+                            label={getServiceLabel(service)}
+                            price={service.prix}
+                            checked={zone?.serviceId === service.id}
+                            onChange={() =>
+                              handleServiceChange(zoneKey, service.id)
+                            }
+                          />
+                          {zone?.serviceId === service.id && (
+                            <OptionsPanel
+                              zoneKey={zoneKey}
+                              service={service}
+                              zone={zone}
+                              onUpdate={(updates) => updateZone(zoneKey, updates)}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              })}
+
+              {hasAnyPrestation && (
+                <fieldset>
+                  <legend className="mb-4 font-serif text-xl text-sauge-fonce">
+                    Horaires
+                  </legend>
+                  <CheckboxRow
+                    label="Je souhaite un créneau en dehors des horaires"
+                    price={horsHorairesPrice}
+                    checked={selection.horsHoraires}
+                    onChange={(checked) =>
+                      setSelection((prev) => ({ ...prev, horsHoraires: checked }))
+                    }
+                  />
+                  <p className="mt-2 text-sm text-sauge">{openingHoursNote}</p>
+                </fieldset>
+              )}
+
+              {quote && (
+                <div>
+                  <h2 className="mb-4 font-serif text-xl text-sauge-fonce">
+                    Récapitulatif
+                  </h2>
+                  <div className="flex flex-col">
+                    {quote.lines.map((line, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between gap-4 border-b border-sauge-clair/40 py-3"
+                      >
+                        <span className="text-sauge-fonce">{line.label}</span>
+                        <span className="text-sauge-fonce">
+                          {line.price === null ? "sur devis" : `${line.price} €`}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {step === "creneau" && quote && (
+            <SlotPicker
+              selection={selection}
+              selectedSlot={selectedSlot}
+              onSelectSlot={setSelectedSlot}
+            />
+          )}
+
+          {step === "coordonnees" && (
+            <p className="text-sauge-fonce">
+              Étape suivante : vos coordonnées
+            </p>
           )}
         </div>
       </Container>
@@ -409,9 +528,15 @@ export default function Configurateur() {
                   {formattedTotal}
                   {quote.hasDevis && " + devis"}
                 </p>
-                <p className="text-sm text-sauge-fonce">
-                  Durée estimée : {formatDuration(quote.durationMinutes)}
-                </p>
+                {selectedSlot ? (
+                  <p className="text-sm text-sauge-fonce">
+                    {formatDayLabel(selectedSlot)} · {formatTimeLabel(selectedSlot)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-sauge-fonce">
+                    Durée estimée : {formatDuration(quote.durationMinutes)}
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-sauge-fonce">Choisissez une prestation</p>
@@ -421,20 +546,34 @@ export default function Configurateur() {
           <div className="flex flex-col items-end gap-1">
             <Button
               variant="primary"
-              disabled={!quote}
+              disabled={
+                step === "prestations"
+                  ? !quote
+                  : step === "creneau"
+                    ? !selectedSlot
+                    : true
+              }
               onClick={() => {
-                // Étape 4 : ouverture Cal.com
+                if (step === "prestations") {
+                  goToStep("creneau");
+                } else if (step === "creneau") {
+                  goToStep("coordonnees");
+                }
               }}
             >
-              {quote?.route === "sur-demande"
-                ? "Envoyer une demande"
-                : "Choisir un créneau"}
+              {step === "prestations"
+                ? quote?.route === "sur-demande"
+                  ? "Envoyer une demande"
+                  : "Choisir un créneau"
+                : "Continuer"}
             </Button>
-            {quote?.route === "sur-demande" && (
-              <p className="text-sm text-sauge-fonce">
-                Confirmation par la prothésiste
-              </p>
-            )}
+            {step === "prestations" &&
+              !selectedSlot &&
+              quote?.route === "sur-demande" && (
+                <p className="text-sm text-sauge-fonce">
+                  Confirmation par la prothésiste
+                </p>
+              )}
           </div>
         </Container>
       </div>
