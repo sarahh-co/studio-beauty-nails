@@ -10,6 +10,7 @@ function zone(overrides: Partial<ZoneChoice> & { serviceId: string }): ZoneChoic
     fleur3dCount: 0,
     tailleXL: false,
     nailArt: false,
+    beaute: false,
     ...overrides,
   };
 }
@@ -149,7 +150,56 @@ describe("getQuote", () => {
     expect(quote?.route).toBe("rdv");
   });
 
+  it("m) Gainage mains + beauté", () => {
+    const quote = getQuote(
+      selection({
+        mains: zone({ serviceId: "mains-gainage", beaute: true }),
+      })
+    );
+    expect(quote?.total).toBe(70);
+    expect(quote?.durationMinutes).toBe(90);
+    expect(quote?.route).toBe("rdv");
+  });
+
+  it("n) Dépose mains (booked alone) + beauté", () => {
+    const quote = getQuote(
+      selection({
+        mains: zone({ serviceId: "depose-mains", beaute: true }),
+      })
+    );
+    expect(quote?.total).toBe(35);
+    expect(quote?.durationMinutes).toBe(60);
+    expect(quote?.route).toBe("rdv");
+  });
+
+  it("o) Semi-permanent pieds + dépose + beauté + French × 2", () => {
+    const quote = getQuote(
+      selection({
+        pieds: zone({
+          serviceId: "pieds-semi",
+          depose: true,
+          beaute: true,
+          frenchCount: 2,
+        }),
+      })
+    );
+    expect(quote?.total).toBe(72);
+    expect(quote?.durationMinutes).toBe(135);
+    expect(quote?.route).toBe("rdv");
+  });
+
+  it("p) Throws: beauté on Beauté des mains", () => {
+    expect(() =>
+      getQuote(
+        selection({
+          mains: zone({ serviceId: "mains-beaute", beaute: true }),
+        })
+      )
+    ).toThrow();
+  });
+
   describe("k) throws", () => {
+
     it("French × 1 on Beauté des mains", () => {
       expect(() =>
         getQuote(

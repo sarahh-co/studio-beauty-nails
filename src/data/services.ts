@@ -12,6 +12,7 @@ export type Service = {
   allowsDeco: boolean;
   allowsTailleXL: boolean;
   allowsDepose: boolean;
+  allowsBeaute: boolean;
 };
 
 export type Supplement = {
@@ -36,6 +37,7 @@ export const services: Service[] = [
     allowsDeco: false,
     allowsTailleXL: false,
     allowsDepose: true,
+    allowsBeaute: false,
   },
   {
     id: "mains-semi",
@@ -49,6 +51,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: false,
     allowsDepose: true,
+    allowsBeaute: true,
   },
   {
     id: "mains-gainage",
@@ -62,6 +65,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: false,
     allowsDepose: true,
+    allowsBeaute: true,
   },
   {
     id: "mains-capsule",
@@ -75,6 +79,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: true,
     allowsDepose: true,
+    allowsBeaute: true,
   },
   // remplissage is deliberately 45 for mains and 40 for pieds — confirmed, not a typo
   {
@@ -89,6 +94,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: true,
     allowsDepose: false,
+    allowsBeaute: true,
   },
   {
     id: "depose-mains",
@@ -102,6 +108,7 @@ export const services: Service[] = [
     allowsDeco: false,
     allowsTailleXL: false,
     allowsDepose: false,
+    allowsBeaute: true,
   },
 
   // PIEDS
@@ -117,6 +124,7 @@ export const services: Service[] = [
     allowsDeco: false,
     allowsTailleXL: false,
     allowsDepose: true,
+    allowsBeaute: false,
   },
   {
     id: "pieds-semi",
@@ -130,6 +138,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: false,
     allowsDepose: true,
+    allowsBeaute: true,
   },
   {
     id: "pieds-gainage",
@@ -143,6 +152,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: false,
     allowsDepose: true,
+    allowsBeaute: true,
   },
   {
     id: "pieds-rallongement",
@@ -156,6 +166,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: true,
     allowsDepose: true,
+    allowsBeaute: true,
   },
   // remplissage is deliberately 45 for mains and 40 for pieds — confirmed, not a typo
   {
@@ -170,6 +181,7 @@ export const services: Service[] = [
     allowsDeco: true,
     allowsTailleXL: true,
     allowsDepose: false,
+    allowsBeaute: true,
   },
   {
     id: "depose-pieds",
@@ -183,6 +195,7 @@ export const services: Service[] = [
     allowsDeco: false,
     allowsTailleXL: false,
     allowsDepose: false,
+    allowsBeaute: true,
   },
 ];
 
@@ -245,6 +258,7 @@ export const addOnDurations = {
   fleur3dChacune: 5,
   tailleXL: 10,
   nailArt: 30,
+  beauteAjoutee: 30,
 };
 
 export const servicesParCategorie = (c: Categorie) =>

@@ -7,11 +7,11 @@ import Container from "./ui/Container";
 import Button from "./ui/Button";
 
 const NAV_LINKS = [
-  { label: "Le salon", href: "#le-salon" },
-  { label: "Prestations & Tarifs", href: "#prestations" },
-  { label: "Galerie", href: "#galerie" },
-  { label: "Avis", href: "#avis" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Le salon", href: "/#le-salon" },
+  { label: "Prestations & Tarifs", href: "/#prestations" },
+  { label: "Galerie", href: "/#galerie" },
+  { label: "Avis", href: "/#avis" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 export default function Header() {
@@ -54,7 +54,7 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Button href="#reserver">Réserver</Button>
+          <Button href="/reserver">Réserver</Button>
 
           <button
             type="button"

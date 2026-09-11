@@ -159,7 +159,7 @@ export default function Tarifs() {
               La dépose peut être réservée seule ou ajoutée à une prestation.
             </p>
 
-            <Button href="#reserver" className="mt-6 w-full">
+            <Button href="/reserver" className="mt-6 w-full">
               Réserver
             </Button>
           </>

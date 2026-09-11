@@ -71,7 +71,7 @@ export default function Hero() {
               className="hero-cta flex w-full gap-3"
               style={{ gridArea: "1 / 1" }}
             >
-              <Button href="#reserver" className="flex-[1.25] py-4">
+              <Button href="/reserver" className="flex-[1.25] py-4">
                 Réserver
               </Button>
               <Button href="#prestations" variant="ghost" className="flex-1">

@@ -2,9 +2,11 @@ import Link from "next/link";
 
 type ButtonProps = {
   children: React.ReactNode;
-  href: string;
+  href?: string;
   variant?: "primary" | "ghost";
   className?: string;
+  disabled?: boolean;
+  onClick?: () => void;
 };
 
 const sharedClasses =
@@ -20,13 +22,24 @@ export default function Button({
   href,
   variant = "primary",
   className,
+  disabled,
+  onClick,
 }: ButtonProps) {
+  const classes = `${sharedClasses} ${variantClasses[variant]} ${
+    disabled ? "opacity-50 pointer-events-none" : ""
+  } ${className ?? ""}`;
+
+  if (href && !disabled) {
+    return (
+      <Link href={href} className={classes} onClick={onClick}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <Link
-      href={href}
-      className={`${sharedClasses} ${variantClasses[variant]} ${className ?? ""}`}
-    >
+    <button type="button" className={classes} disabled={disabled} onClick={onClick}>
       {children}
-    </Link>
+    </button>
   );
 }

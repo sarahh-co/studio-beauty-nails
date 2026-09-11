@@ -16,6 +16,7 @@ export type ZoneChoice = {
   fleur3dCount: number; // 0–10
   tailleXL: boolean;
   nailArt: boolean;
+  beaute: boolean;
 };
 
 export type Selection = {
@@ -110,6 +111,10 @@ function processZone(zoneKey: Categorie, zone: ZoneChoice): ZoneResult {
     throw new Error(`La dépose ne peut pas être ajoutée à "${service.nom}"`);
   }
 
+  if (zone.beaute && !service.allowsBeaute) {
+    throw new Error(`La beauté ne peut pas être ajoutée à "${service.nom}"`);
+  }
+
   const lines: QuoteLine[] = [];
   let price = service.prix;
   let durationMinutes = service.durationMinutes;
@@ -125,6 +130,16 @@ function processZone(zoneKey: Categorie, zone: ZoneChoice): ZoneResult {
     price += deposeService.prix;
     lines.push({ label: "Dépose", price: deposeService.prix });
     durationMinutes += addOnDurations.deposeAjoutee;
+  }
+
+  if (zone.beaute) {
+    const beauteService = services.find((s) => s.id === `${zoneKey}-beaute`);
+    if (!beauteService) {
+      throw new Error(`Service de beauté introuvable pour ${zoneKey}`);
+    }
+    price += beauteService.prix;
+    lines.push({ label: beauteService.nom, price: beauteService.prix });
+    durationMinutes += addOnDurations.beauteAjoutee;
   }
 
   if (zone.frenchCount > 0) {
