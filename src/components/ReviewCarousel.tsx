@@ -88,7 +88,7 @@ export default function ReviewCarousel({ reviews }: ReviewCarouselProps) {
   return (
     <ul
       ref={trackRef}
-      className="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:snap-none"
+      className="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 [contain:layout] md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:snap-none"
       style={{ scrollPaddingLeft: "1.25rem" }}
     >
       {COPIES.flatMap((copy) =>

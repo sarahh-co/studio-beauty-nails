@@ -37,7 +37,7 @@ export default function RootLayout({
       lang="fr"
       className={`${dmSerif.variable} ${geist.variable} ${quentin.variable}`}
     >
-      <body className="overflow-x-hidden">
+      <body>
         <Header />
         {children}
         <Footer />

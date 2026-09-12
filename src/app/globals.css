@@ -24,6 +24,11 @@
   --font-quentin: var(--font-quentin);
 }
 
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--color-creme);
   color: var(--color-sauge-fonce);
