@@ -20,6 +20,7 @@
 @theme inline {
   --font-sans: var(--font-geist);
   --font-serif: var(--font-dm-serif);
+  --font-quentin: var(--font-quentin);
 }
 
 body {
@@ -74,6 +75,10 @@ body {
 
   details[open] > .faq-answer {
     animation: none;
+  }
+
+  .footer-image-layer {
+    transform: none;
   }
 }
 
@@ -228,6 +233,39 @@ details[open] > .faq-answer {
 
 .reserver-bar {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* FOOTER */
+.footer-image-layer {
+  height: 130%;
+  transform: translate3d(0, var(--footer-shift, 0px), 0);
+}
+
+.footer-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(38, 45, 40, 0.55),
+    rgba(38, 45, 40, 0.8)
+  );
+}
+
+.footer-wordmark {
+  font-family: var(--font-quentin);
+  line-height: 0.85;
+  text-align: center;
+  color: var(--color-creme);
+  opacity: 0.55;
+}
+
+.footer-wordmark-line1 {
+  display: block;
+  font-size: clamp(3.5rem, 18vw, 9rem);
+}
+
+/* ~57% of line1 — within the requested 55–60% range */
+.footer-wordmark-line2 {
+  display: block;
+  font-size: clamp(2rem, 10.3vw, 5.2rem);
 }
 
 .hero-grain {

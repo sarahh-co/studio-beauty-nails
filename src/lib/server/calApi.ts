@@ -4,6 +4,19 @@ import { calUsername, calTimeZone } from "@/data/site";
 
 const CAL_API_BASE = "https://api.cal.com/v2";
 const CAL_API_VERSION = "2024-09-04";
+const CAL_BOOKINGS_API_VERSION = "2026-02-25";
+
+export class CalApiError extends Error {
+  status: number;
+  isConflict: boolean;
+
+  constructor(message: string, status: number, isConflict = false) {
+    super(message);
+    this.name = "CalApiError";
+    this.status = status;
+    this.isConflict = isConflict;
+  }
+}
 
 type CalSlotsResponse = {
   status: string;
@@ -50,4 +63,92 @@ export async function getSlots(
   }
 
   return slotsByDate;
+}
+
+export type BookingAttendee = {
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  timeZone: string;
+  language: string;
+};
+
+export type CreateBookingParams = {
+  slug: string;
+  start: string; // ISO UTC
+  attendee: BookingAttendee;
+  prestationsRecap: string;
+};
+
+export type BookingResult = {
+  uid: string;
+  status: string;
+  start: string;
+};
+
+type CalBookingResponse = {
+  status: string;
+  data: {
+    uid: string;
+    status: string;
+    start: string;
+  };
+};
+
+export async function createBooking(
+  params: CreateBookingParams
+): Promise<BookingResult> {
+  const apiKey = process.env.CAL_API_KEY;
+  if (!apiKey) {
+    throw new CalApiError(
+      "CAL_API_KEY n'est pas configurée sur le serveur",
+      500
+    );
+  }
+
+  const response = await fetch(`${CAL_API_BASE}/bookings`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "cal-api-version": CAL_BOOKINGS_API_VERSION,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      start: params.start,
+      eventTypeSlug: params.slug,
+      username: calUsername,
+      attendee: params.attendee,
+      bookingFieldsResponses: {
+        prestations: params.prestationsRecap,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    let bodyText = "";
+    try {
+      bodyText = await response.text();
+    } catch {
+      // ignore — body isn't needed beyond the conflict heuristic below
+    }
+    const lowered = bodyText.toLowerCase();
+    const isConflict =
+      response.status === 409 ||
+      lowered.includes("conflict") ||
+      lowered.includes("no_available_users");
+
+    throw new CalApiError(
+      `Cal.com a répondu avec le statut ${response.status}`,
+      response.status,
+      isConflict
+    );
+  }
+
+  const body = (await response.json()) as CalBookingResponse;
+
+  return {
+    uid: body.data.uid,
+    status: body.data.status,
+    start: body.data.start,
+  };
 }

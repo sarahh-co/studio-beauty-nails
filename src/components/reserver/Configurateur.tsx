@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import Stepper from "@/components/reserver/Stepper";
@@ -43,7 +43,7 @@ const initialSelection: Selection = {
   horsHoraires: false,
 };
 
-type Step = "prestations" | "creneau" | "coordonnees";
+type Step = "prestations" | "creneau" | "coordonnees" | "confirmee";
 
 const STEP_ORDER: Step[] = ["prestations", "creneau", "coordonnees"];
 
@@ -51,13 +51,51 @@ const STEP_LABELS: Record<Step, string> = {
   prestations: "Prestations",
   creneau: "Créneau",
   coordonnees: "Coordonnées",
+  confirmee: "Confirmée",
 };
 
 const STEP_SUBTITLES: Record<Step, string> = {
   prestations: "Choisissez vos prestations, le prix s’affiche en direct.",
   creneau: "Choisissez le jour et l’heure.",
   coordonnees: "Vos coordonnées pour confirmer.",
+  confirmee: "",
 };
+
+const fullDateFormatter = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+function formatFullDate(iso: string): string {
+  return fullDateFormatter.format(new Date(iso));
+}
+
+function validateName(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed.length >= 2 && trimmed.length <= 80
+    ? null
+    : "Merci d’indiquer votre nom et prénom.";
+}
+
+function validateEmail(value: string): string | null {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    ? null
+    : "Adresse e-mail invalide.";
+}
+
+function validatePhone(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed.length >= 6 && trimmed.length <= 20
+    ? null
+    : "Numéro de téléphone invalide.";
+}
+
+function validateConsent(value: boolean): string | null {
+  return value ? null : "Veuillez accepter pour continuer.";
+}
 
 function createFreshZone(serviceId: string): ZoneChoice {
   return {
@@ -298,6 +336,27 @@ export default function Configurateur() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("prestations");
 
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [creneauNotice, setCreneauNotice] = useState<string | null>(null);
+  const [slotPickerKey, setSlotPickerKey] = useState(0);
+  const submittingRef = useRef(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const consentRef = useRef<HTMLInputElement>(null);
+
+  const nameError = validateName(name);
+  const emailError = validateEmail(email);
+  const phoneError = validatePhone(phone);
+  const consentError = validateConsent(consent);
+  const formIsValid = !nameError && !emailError && !phoneError && !consentError;
+
   let quote = null as ReturnType<typeof getQuote>;
   let error: string | null = null;
   try {
@@ -347,6 +406,69 @@ export default function Configurateur() {
     }
   }
 
+  async function handleSubmit() {
+    setSubmitAttempted(true);
+
+    if (nameError) {
+      nameRef.current?.focus();
+      return;
+    }
+    if (emailError) {
+      emailRef.current?.focus();
+      return;
+    }
+    if (phoneError) {
+      phoneRef.current?.focus();
+      return;
+    }
+    if (consentError) {
+      consentRef.current?.focus();
+      return;
+    }
+    if (!selectedSlot || submittingRef.current) return;
+
+    submittingRef.current = true;
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch("/api/reservation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selection,
+          slotIso: selectedSlot,
+          name,
+          email,
+          phone,
+          consent,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        goToStep("confirmee");
+        return;
+      }
+
+      if (response.status === 409) {
+        setCreneauNotice(data.error ?? "Ce créneau vient d’être réservé.");
+        setSelectedSlot(null);
+        setSlotPickerKey((key) => key + 1);
+        goToStep("creneau");
+        return;
+      }
+
+      setSubmitError(data.error ?? "Une erreur est survenue.");
+    } catch {
+      setSubmitError("Une erreur réseau est survenue. Réessayez.");
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  }
+
   function handleServiceChange(zoneKey: Categorie, serviceId: string) {
     setSelection((prev) => ({
       ...prev,
@@ -377,6 +499,70 @@ export default function Configurateur() {
     ? quote.lines.map((line) => line.label).join(" · ")
     : "";
   const stepIndex = STEP_ORDER.indexOf(step);
+
+  if (step === "confirmee" && quote && selectedSlot) {
+    const isSurDemande = quote.route === "sur-demande";
+    return (
+      <div className="bg-creme">
+        <Container className="flex flex-col items-start gap-4 pb-16">
+          <div
+            aria-hidden="true"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-sauge-fonce text-creme"
+          >
+            <CheckIcon />
+          </div>
+
+          {isSurDemande ? (
+            <h2 className="font-serif text-2xl text-sauge-fonce">
+              Votre demande a bien été envoyée.
+            </h2>
+          ) : (
+            <h2 className="font-serif text-2xl text-sauge-fonce">
+              C’est confirmé !
+            </h2>
+          )}
+
+          <p className="text-sauge-fonce">
+            {formatFullDate(selectedSlot)} à {formatTimeLabel(selectedSlot)}
+          </p>
+
+          <div className="w-full">
+            <div className="flex flex-col">
+              {quote.lines.map((line, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between gap-4 border-b border-sauge-clair/40 py-3"
+                >
+                  <span className="text-sauge-fonce">{line.label}</span>
+                  <span className="text-sauge-fonce">
+                    {line.price === null ? "sur devis" : `${line.price} €`}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 font-serif text-xl text-sauge-fonce">
+              {formattedTotal}
+              {quote.hasDevis && " + devis"}
+            </p>
+          </div>
+
+          {isSurDemande ? (
+            <p className="text-sauge-fonce">
+              La prothésiste vous confirmera le rendez-vous.
+            </p>
+          ) : (
+            <p className="text-sauge-fonce">
+              Un e-mail de confirmation vient de vous être envoyé.
+            </p>
+          )}
+
+          <Button href="/" variant="ghost" className="mt-4">
+            Retour à l’accueil
+          </Button>
+        </Container>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-creme">
@@ -502,17 +688,114 @@ export default function Configurateur() {
           )}
 
           {step === "creneau" && quote && (
-            <SlotPicker
-              selection={selection}
-              selectedSlot={selectedSlot}
-              onSelectSlot={setSelectedSlot}
-            />
+            <div>
+              {creneauNotice && (
+                <p className="mb-3 text-sm text-rose-profond">{creneauNotice}</p>
+              )}
+              <SlotPicker
+                key={slotPickerKey}
+                selection={selection}
+                selectedSlot={selectedSlot}
+                onSelectSlot={(iso) => {
+                  setCreneauNotice(null);
+                  setSelectedSlot(iso);
+                }}
+              />
+            </div>
           )}
 
           {step === "coordonnees" && (
-            <p className="text-sauge-fonce">
-              Étape suivante : vos coordonnées
-            </p>
+            <div className="flex flex-col gap-5">
+              <div>
+                <label
+                  htmlFor="reserver-nom"
+                  className="mb-1 block text-sm text-sauge-fonce"
+                >
+                  Nom et prénom
+                </label>
+                <input
+                  id="reserver-nom"
+                  ref={nameRef}
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  aria-invalid={submitAttempted && !!nameError}
+                  className="min-h-11 w-full rounded-lg border border-sauge-clair bg-white px-4 text-sauge-fonce focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-fonce"
+                />
+                {submitAttempted && nameError && (
+                  <p className="mt-1 text-sm text-rose-profond">{nameError}</p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="reserver-email"
+                  className="mb-1 block text-sm text-sauge-fonce"
+                >
+                  E-mail
+                </label>
+                <input
+                  id="reserver-email"
+                  ref={emailRef}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  aria-invalid={submitAttempted && !!emailError}
+                  className="min-h-11 w-full rounded-lg border border-sauge-clair bg-white px-4 text-sauge-fonce focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-fonce"
+                />
+                {submitAttempted && emailError && (
+                  <p className="mt-1 text-sm text-rose-profond">{emailError}</p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="reserver-telephone"
+                  className="mb-1 block text-sm text-sauge-fonce"
+                >
+                  Téléphone
+                </label>
+                <input
+                  id="reserver-telephone"
+                  ref={phoneRef}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  aria-invalid={submitAttempted && !!phoneError}
+                  className="min-h-11 w-full rounded-lg border border-sauge-clair bg-white px-4 text-sauge-fonce focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-fonce"
+                />
+                {submitAttempted && phoneError && (
+                  <p className="mt-1 text-sm text-rose-profond">{phoneError}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm text-sauge-fonce has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-sauge-fonce">
+                  <input
+                    ref={consentRef}
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    aria-invalid={submitAttempted && !!consentError}
+                    className="mt-0.5"
+                  />
+                  J’accepte que mes coordonnées soient utilisées pour gérer mon
+                  rendez-vous.
+                </label>
+                {submitAttempted && consentError && (
+                  <p className="mt-1 text-sm text-rose-profond">{consentError}</p>
+                )}
+              </div>
+
+              {submitError && (
+                <p className="text-sm text-rose-profond">{submitError}</p>
+              )}
+            </div>
           )}
         </div>
       </Container>
@@ -551,13 +834,15 @@ export default function Configurateur() {
                   ? !quote
                   : step === "creneau"
                     ? !selectedSlot
-                    : true
+                    : !formIsValid || submitting
               }
               onClick={() => {
                 if (step === "prestations") {
                   goToStep("creneau");
                 } else if (step === "creneau") {
                   goToStep("coordonnees");
+                } else if (step === "coordonnees") {
+                  handleSubmit();
                 }
               }}
             >
@@ -565,7 +850,11 @@ export default function Configurateur() {
                 ? quote?.route === "sur-demande"
                   ? "Envoyer une demande"
                   : "Choisir un créneau"
-                : "Continuer"}
+                : step === "creneau"
+                  ? "Continuer"
+                  : submitting
+                    ? "Réservation en cours…"
+                    : "Confirmer"}
             </Button>
             {step === "prestations" &&
               !selectedSlot &&

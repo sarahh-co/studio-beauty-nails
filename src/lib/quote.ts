@@ -72,14 +72,16 @@ function tierDuration(count: number): number {
   return addOnDurations.decoTier2;
 }
 
-type ZoneResult = {
+export type ZoneResult = {
   lines: QuoteLine[];
   price: number;
   durationMinutes: number;
   hasDevis: boolean;
 };
 
-function processZone(zoneKey: Categorie, zone: ZoneChoice): ZoneResult {
+// Exported so other modules (e.g. src/lib/calcom.ts) can reuse the exact
+// per-zone duration/validation rules instead of re-implementing them.
+export function processZone(zoneKey: Categorie, zone: ZoneChoice): ZoneResult {
   const service = services.find((s) => s.id === zone.serviceId);
   if (!service) {
     throw new Error(`Service inconnu : ${zone.serviceId}`);
