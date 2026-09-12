@@ -22,7 +22,7 @@ import {
   type Service,
 } from "@/data/services";
 import { formatDuration } from "@/lib/formatDuration";
-import { openingHoursNote } from "@/data/site";
+import { openingHoursNote, phoneHref, instagramUrl } from "@/data/site";
 
 const ZONE_LABELS: Record<Categorie, string> = {
   mains: "Mains",
@@ -43,7 +43,7 @@ const initialSelection: Selection = {
   horsHoraires: false,
 };
 
-type Step = "prestations" | "creneau" | "coordonnees" | "confirmee";
+type Step = "prestations" | "creneau" | "coordonnees" | "contact" | "confirmee";
 
 const STEP_ORDER: Step[] = ["prestations", "creneau", "coordonnees"];
 
@@ -51,6 +51,7 @@ const STEP_LABELS: Record<Step, string> = {
   prestations: "Prestations",
   creneau: "Créneau",
   coordonnees: "Coordonnées",
+  contact: "Contact",
   confirmee: "Confirmée",
 };
 
@@ -58,6 +59,7 @@ const STEP_SUBTITLES: Record<Step, string> = {
   prestations: "Choisissez vos prestations, le prix s’affiche en direct.",
   creneau: "Choisissez le jour et l’heure.",
   coordonnees: "Vos coordonnées pour confirmer.",
+  contact: "",
   confirmee: "",
 };
 
@@ -95,6 +97,23 @@ function validatePhone(value: string): string | null {
 
 function validateConsent(value: boolean): string | null {
   return value ? null : "Veuillez accepter pour continuer.";
+}
+
+function buildContactRecapText(quote: NonNullable<ReturnType<typeof getQuote>>): string {
+  const lineStrings = quote.lines.map(
+    (line) => `${line.label} ${line.price === null ? "sur devis" : `${line.price} €`}`
+  );
+  const total = new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(quote.total);
+
+  return [
+    ...lineStrings,
+    `Total : ${total}${quote.hasDevis ? " + devis" : ""}`,
+    `Durée : ${formatDuration(quote.durationMinutes)}`,
+  ].join("\n");
 }
 
 function createFreshZone(serviceId: string): ZoneChoice {
@@ -345,6 +364,8 @@ export default function Configurateur() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [creneauNotice, setCreneauNotice] = useState<string | null>(null);
   const [slotPickerKey, setSlotPickerKey] = useState(0);
+  const [clipboardAvailable, setClipboardAvailable] = useState(false);
+  const [recapCopied, setRecapCopied] = useState(false);
   const submittingRef = useRef(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -390,6 +411,13 @@ export default function Configurateur() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);
 
+  // Checked client-side only, after mount, to avoid an SSR/client mismatch.
+  useEffect(() => {
+    setClipboardAvailable(
+      typeof navigator !== "undefined" && !!navigator.clipboard
+    );
+  }, []);
+
   function goToStep(next: Step) {
     window.history.pushState({ step: next }, "");
     setStep(next);
@@ -400,9 +428,25 @@ export default function Configurateur() {
   }
 
   function goToPrestations() {
+    if (step === "contact") {
+      // Reached directly from "prestations" — always exactly one hop away.
+      window.history.back();
+      return;
+    }
     const currentIndex = STEP_ORDER.indexOf(step);
     if (currentIndex > 0) {
       window.history.go(-currentIndex);
+    }
+  }
+
+  async function handleCopyRecap() {
+    if (!quote) return;
+    try {
+      await navigator.clipboard.writeText(buildContactRecapText(quote));
+      setRecapCopied(true);
+      setTimeout(() => setRecapCopied(false), 2000);
+    } catch {
+      // Clipboard write failed — the button simply won't confirm.
     }
   }
 
@@ -499,6 +543,12 @@ export default function Configurateur() {
     ? quote.lines.map((line) => line.label).join(" · ")
     : "";
   const stepIndex = STEP_ORDER.indexOf(step);
+  // hasDevis is set by getQuote() only when a zone has nail art selected.
+  const goingToContact = quote?.hasDevis === true;
+  const progressLabel =
+    step === "contact"
+      ? "Étape 2 sur 2 · Contact"
+      : `Étape ${stepIndex + 1} sur 3 · ${STEP_LABELS[step]}`;
 
   if (step === "confirmee" && quote && selectedSlot) {
     const isSurDemande = quote.route === "sur-demande";
@@ -579,14 +629,14 @@ export default function Configurateur() {
               </button>
             )}
             <p className="font-sans text-sm text-sauge-fonce">
-              Étape {stepIndex + 1} sur 3 · {STEP_LABELS[step]}
+              {progressLabel}
             </p>
             <p className="mt-3 font-sans text-sm text-sauge-fonce">
               {STEP_SUBTITLES[step]}
             </p>
           </div>
 
-          {step !== "prestations" && quote && (
+          {step !== "prestations" && step !== "contact" && quote && (
             <div className="flex items-start justify-between gap-4">
               <p className="line-clamp-2 text-sm text-sauge-fonce">
                 {recapLine}
@@ -797,9 +847,69 @@ export default function Configurateur() {
               )}
             </div>
           )}
+
+          {step === "contact" && quote && (
+            <div className="flex flex-col gap-5">
+              <div>
+                <h2 className="font-serif text-2xl text-sauge-fonce">
+                  Votre nail art est sur devis
+                </h2>
+                <p className="mt-2 text-sauge-fonce">
+                  Envoyez-moi votre inspiration et je vous propose un prix et
+                  un créneau.
+                </p>
+              </div>
+
+              <div>
+                <div className="flex flex-col">
+                  {quote.lines.map((line, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between gap-4 border-b border-sauge-clair/40 py-3"
+                    >
+                      <span className="text-sauge-fonce">{line.label}</span>
+                      <span className="text-sauge-fonce">
+                        {line.price === null ? "sur devis" : `${line.price} €`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 font-serif text-xl text-sauge-fonce">
+                  {formattedTotal} + devis
+                </p>
+              </div>
+
+              {clipboardAvailable && (
+                <button
+                  type="button"
+                  onClick={handleCopyRecap}
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-sauge-clair px-4 text-sauge-fonce focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-fonce"
+                >
+                  {recapCopied ? "Copié" : "Copier le récapitulatif"}
+                </button>
+              )}
+
+              <Button href={instagramUrl} target="_blank" rel="noopener noreferrer">
+                Écrire sur Instagram
+              </Button>
+
+              <Button href={phoneHref} variant="ghost">
+                Appeler
+              </Button>
+
+              <button
+                type="button"
+                onClick={goToPrestations}
+                className="min-h-11 text-sm text-sauge-fonce underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-fonce"
+              >
+                Retour
+              </button>
+            </div>
+          )}
         </div>
       </Container>
 
+      {step !== "contact" && (
       <div className="reserver-bar fixed inset-x-0 bottom-0 z-40 border-t border-sauge-clair bg-creme">
         <Container className="flex items-center justify-between gap-4 py-4">
           <div>
@@ -838,7 +948,11 @@ export default function Configurateur() {
               }
               onClick={() => {
                 if (step === "prestations") {
-                  goToStep("creneau");
+                  if (goingToContact) {
+                    goToStep("contact");
+                  } else {
+                    goToStep("creneau");
+                  }
                 } else if (step === "creneau") {
                   goToStep("coordonnees");
                 } else if (step === "coordonnees") {
@@ -847,9 +961,11 @@ export default function Configurateur() {
               }}
             >
               {step === "prestations"
-                ? quote?.route === "sur-demande"
-                  ? "Envoyer une demande"
-                  : "Choisir un créneau"
+                ? goingToContact
+                  ? "Contacter la prothésiste"
+                  : quote?.route === "sur-demande"
+                    ? "Envoyer une demande"
+                    : "Choisir un créneau"
                 : step === "creneau"
                   ? "Continuer"
                   : submitting
@@ -858,6 +974,7 @@ export default function Configurateur() {
             </Button>
             {step === "prestations" &&
               !selectedSlot &&
+              !goingToContact &&
               quote?.route === "sur-demande" && (
                 <p className="text-sm text-sauge-fonce">
                   Confirmation par la prothésiste
@@ -866,6 +983,7 @@ export default function Configurateur() {
           </div>
         </Container>
       </div>
+      )}
     </div>
   );
 }

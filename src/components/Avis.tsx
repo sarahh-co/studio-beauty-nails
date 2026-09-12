@@ -7,7 +7,7 @@ import { googleReviewsUrl } from "@/data/site";
 
 export default function Avis() {
   return (
-    <Section id="avis" className="bg-creme">
+    <Section id="avis" className="bg-creme-fonce">
       <Reveal>
         <h2 className="font-serif text-[32px] leading-tight text-sauge-fonce md:text-[48px]">
           Retours d’expérience
@@ -15,8 +15,8 @@ export default function Avis() {
       </Reveal>
 
       <Reveal className="mt-10">
-        <div className="panel-bevel rounded-3xl bg-sauge-fonce p-5 md:p-8">
-          <h3 className="mb-5 inline-flex items-center gap-2 font-sans text-xl font-medium text-creme">
+        <div className="panel-bevel rounded-3xl bg-creme p-5 md:p-8">
+          <h3 className="mb-5 inline-flex items-center gap-2 font-sans text-xl font-medium text-sauge-fonce">
             <Image
               src="/icons/google.svg"
               width={24}

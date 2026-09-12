@@ -112,7 +112,7 @@ export default function Footer() {
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex min-h-11 flex-col justify-center text-creme hover:underline hover:underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-creme"
+                className="flex min-h-11 flex-col justify-center text-creme hover:underline hover:underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-creme md:hidden"
               >
                 {addressLines.map((line) => (
                   <span key={line}>{line}</span>
@@ -132,8 +132,19 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="flex items-start gap-6">
-            <div>
+          <div className="flex items-start gap-6 md:items-center">
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden min-h-11 flex-col justify-center text-creme hover:underline hover:underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-creme md:order-1 md:flex"
+            >
+              {addressLines.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </a>
+
+            <div className="order-1 md:order-3">
               <h2 className="text-sm uppercase tracking-wide text-creme opacity-80">
                 Horaires
               </h2>
@@ -143,7 +154,7 @@ export default function Footer() {
               </div>
             </div>
 
-            <div className="w-40 shrink-0 md:w-80">
+            <div className="order-2 w-40 shrink-0 md:w-80">
               <a
                 href={mapsUrl}
                 target="_blank"

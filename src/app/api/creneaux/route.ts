@@ -3,9 +3,16 @@ import { z } from "zod";
 import { getQuote, type Selection } from "@/lib/quote";
 import { snapToLadder, slugFor } from "@/lib/calcom";
 import { getSlots } from "@/lib/server/calApi";
+import { checkRateLimit, getClientIp } from "@/lib/server/rateLimit";
 
 const MAX_RANGE_DAYS = 14;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60_000; // 1 minute
+
+const RATE_LIMIT_MESSAGE =
+  "Trop de tentatives. Merci de réessayer dans quelques instants.";
 
 const zoneChoiceSchema = z.object({
   serviceId: z.string(),
@@ -47,6 +54,20 @@ function todayInParis(): string {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  if (ip !== null) {
+    const rateLimit = checkRateLimit(`creneaux:${ip}`, RATE_LIMIT, RATE_WINDOW_MS);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: RATE_LIMIT_MESSAGE },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+        }
+      );
+    }
+  }
+
   let json: unknown;
   try {
     json = await request.json();

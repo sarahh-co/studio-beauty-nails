@@ -5,6 +5,15 @@ import { snapToLadder, slugFor } from "@/lib/calcom";
 import { getSlots, createBooking, CalApiError } from "@/lib/server/calApi";
 import { formatDuration } from "@/lib/formatDuration";
 import { calTimeZone } from "@/data/site";
+import { checkRateLimit, getClientIp } from "@/lib/server/rateLimit";
+
+const RATE_LIMIT_10MIN = 5;
+const RATE_WINDOW_10MIN_MS = 10 * 60_000;
+const RATE_LIMIT_1MIN = 2;
+const RATE_WINDOW_1MIN_MS = 60_000;
+
+const RATE_LIMIT_MESSAGE =
+  "Trop de tentatives. Merci de réessayer dans quelques instants.";
 
 const zoneChoiceSchema = z.object({
   serviceId: z.string(),
@@ -66,6 +75,34 @@ function buildPrestationsRecap(
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  if (ip !== null) {
+    const shortWindow = checkRateLimit(
+      `reservation-1m:${ip}`,
+      RATE_LIMIT_1MIN,
+      RATE_WINDOW_1MIN_MS
+    );
+    const longWindow = checkRateLimit(
+      `reservation-10m:${ip}`,
+      RATE_LIMIT_10MIN,
+      RATE_WINDOW_10MIN_MS
+    );
+
+    if (!shortWindow.allowed || !longWindow.allowed) {
+      const retryAfterSeconds = Math.max(
+        shortWindow.allowed ? 0 : shortWindow.retryAfterSeconds,
+        longWindow.allowed ? 0 : longWindow.retryAfterSeconds
+      );
+      return NextResponse.json(
+        { error: RATE_LIMIT_MESSAGE },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retryAfterSeconds) },
+        }
+      );
+    }
+  }
+
   let json: unknown;
   try {
     json = await request.json();

@@ -48,7 +48,7 @@ export default function Tarifs() {
   }, [open]);
 
   return (
-    <Section id="prestations" className="bg-creme">
+    <Section id="prestations" className="bg-creme-fonce">
       <Reveal>
         <div className="flex items-center gap-3">
           <div className="h-px w-8 bg-sauge" />
@@ -62,7 +62,7 @@ export default function Tarifs() {
       </Reveal>
 
       <Reveal delay={150}>
-        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-1 md:max-w-[420px] md:gap-6">
+        <div className="mt-10 grid grid-cols-2 gap-4 md:gap-6">
           {(["mains", "pieds"] as const).map((categorie) => (
             <button
               key={categorie}

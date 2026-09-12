@@ -11,7 +11,7 @@ export default function Hero() {
   useEffect(() => {
     const check = () => {
       if (done.current) return;
-      if (window.scrollY > 40) {
+      if (window.scrollY > 120) {
         done.current = true;
         setRevealed(true);
         window.removeEventListener("scroll", check);
@@ -57,7 +57,7 @@ export default function Hero() {
 
         <div className="hero-text absolute bottom-[1%] left-0 z-50 max-w-md p-6 md:max-w-lg md:p-12">
           <h1 className="font-serif text-3xl leading-tight text-creme md:text-5xl mb-6 md:mb-8">
-            L&apos;élégance au bout des doigts
+            Des ongles qui vous ressemblent.
           </h1>
 
           <div className="hero-swap grid">
@@ -65,7 +65,8 @@ export default function Hero() {
               className="hero-sub mt-3 font-sans text-sm text-creme/85 md:text-base"
               style={{ gridArea: "1 / 1" }}
             >
-              Prothésiste ongulaire — prenez rendez-vous en ligne
+              Des créations sur mesure, réalisées avec soin et précision pour
+              sublimer vos mains.
             </p>
             <div
               className="hero-cta flex w-full gap-3"
