@@ -9,12 +9,14 @@ const CAL_BOOKINGS_API_VERSION = "2026-02-25";
 export class CalApiError extends Error {
   status: number;
   isConflict: boolean;
+  bodyText: string;
 
-  constructor(message: string, status: number, isConflict = false) {
+  constructor(message: string, status: number, isConflict = false, bodyText = "") {
     super(message);
     this.name = "CalApiError";
     this.status = status;
     this.isConflict = isConflict;
+    this.bodyText = bodyText;
   }
 }
 
@@ -140,7 +142,8 @@ export async function createBooking(
     throw new CalApiError(
       `Cal.com a répondu avec le statut ${response.status}`,
       response.status,
-      isConflict
+      isConflict,
+      bodyText
     );
   }
 

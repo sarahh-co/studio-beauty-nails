@@ -360,6 +360,7 @@ export default function Configurateur() {
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [phoneFailCount, setPhoneFailCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [creneauNotice, setCreneauNotice] = useState<string | null>(null);
@@ -462,6 +463,7 @@ export default function Configurateur() {
       return;
     }
     if (phoneError) {
+      setPhoneFailCount((c) => c + 1);
       phoneRef.current?.focus();
       return;
     }
@@ -821,6 +823,9 @@ export default function Configurateur() {
                 />
                 {submitAttempted && phoneError && (
                   <p className="mt-1 text-sm text-rose-profond">{phoneError}</p>
+                )}
+                {submitAttempted && phoneError && phoneFailCount >= 2 && (
+                  <p className="mt-1 text-sm text-sauge-clair">Format : 06 12 34 56 78</p>
                 )}
               </div>
 

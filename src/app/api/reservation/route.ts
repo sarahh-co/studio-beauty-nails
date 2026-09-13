@@ -6,6 +6,7 @@ import { getSlots, createBooking, CalApiError } from "@/lib/server/calApi";
 import { formatDuration } from "@/lib/formatDuration";
 import { calTimeZone } from "@/data/site";
 import { checkRateLimit, getClientIp } from "@/lib/server/rateLimit";
+import { normalizePhone } from "@/lib/phone";
 
 const RATE_LIMIT_10MIN = 5;
 const RATE_WINDOW_10MIN_MS = 10 * 60_000;
@@ -45,6 +46,20 @@ const bodySchema = z.object({
 });
 
 const CONFLICT_MESSAGE = "Ce créneau vient d’être réservé.";
+
+function fieldErrorMessage(bodyText: string): string {
+  const lowered = bodyText.toLowerCase();
+  if (lowered.includes("phone")) {
+    return "Numéro de téléphone invalide. Format attendu : 06 12 34 56 78.";
+  }
+  if (lowered.includes("email")) {
+    return "Adresse e-mail invalide.";
+  }
+  if (lowered.includes("name")) {
+    return "Nom invalide.";
+  }
+  return "La demande de réservation est invalide.";
+}
 
 function dayInParis(iso: string): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -117,6 +132,11 @@ export async function POST(request: NextRequest) {
 
   const { selection, slotIso, name, email, phone } = parsed.data;
 
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone.ok) {
+    return NextResponse.json({ error: normalizedPhone.error }, { status: 400 });
+  }
+
   let quote;
   try {
     quote = getQuote(selection as Selection);
@@ -168,7 +188,7 @@ export async function POST(request: NextRequest) {
       attendee: {
         name,
         email,
-        phoneNumber: phone,
+        phoneNumber: normalizedPhone.value,
         timeZone: calTimeZone,
         language: "fr",
       },
@@ -178,9 +198,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ uid: booking.uid, status: booking.status });
   } catch (e) {
     if (e instanceof CalApiError) {
-      console.error(`Cal.com booking error for slug ${slug}: status ${e.status}`);
+      console.error(
+        `Cal.com booking error for slug ${slug}: status ${e.status} - ${e.bodyText}`
+      );
       if (e.isConflict) {
         return NextResponse.json({ error: CONFLICT_MESSAGE }, { status: 409 });
+      }
+      if (e.status >= 400 && e.status < 500) {
+        return NextResponse.json(
+          { error: fieldErrorMessage(e.bodyText) },
+          { status: 400 }
+        );
       }
       return NextResponse.json(
         { error: "La réservation n’a pas pu être enregistrée." },
